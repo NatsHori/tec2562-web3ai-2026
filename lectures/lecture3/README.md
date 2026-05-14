@@ -1,8 +1,8 @@
-# NatsHori - web3・AI概論 2026
+# tec2562 - web3・AI概論 2026
 
 > このリポジトリは **web3・AI概論 2026** の各回宿題提出物を **累積管理** するレポです。\
 > 各回の宿題は `lectures/lecture[N]/` フォルダに収納されます。\
-> リポ名は `NatsHori-web3ai-2026` に統一(本名ではなく Discord ID を使う)。
+> リポ名は `tec2562-web3ai-2026` に統一(本名ではなく Discord ID を使う)。
 
 ---
 

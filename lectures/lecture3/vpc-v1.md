@@ -1,4 +1,4 @@
-# VPC v1 - NatsHori
+# VPC v1 - tec2562
 
 ![VPC v1](../../assets/vpc-v1.png)
 
