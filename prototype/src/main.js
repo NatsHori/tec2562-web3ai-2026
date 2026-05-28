@@ -190,11 +190,42 @@ function openModal(category) {
   if (files.length === 0) {
     modalFileList.innerHTML = '<li>ファイルがありません</li>';
   } else {
+    // Group files by first 7 characters (prefix)
+    const groups = {};
     files.forEach(file => {
-      const li = document.createElement('li');
-      li.innerHTML = `<img src="${file.icon}" alt="icon"> ${file.name}`;
-      modalFileList.appendChild(li);
+      // Remove extension for prefix extraction
+      const dotIndex = file.name.lastIndexOf('.');
+      const baseName = dotIndex > 0 ? file.name.substring(0, dotIndex) : file.name;
+      const prefix = baseName.substring(0, 7);
+      
+      if (!groups[prefix]) groups[prefix] = [];
+      groups[prefix].push(file);
     });
+
+    for (const [prefix, groupFiles] of Object.entries(groups)) {
+      if (groupFiles.length >= 2) {
+        // Render as sub-folder
+        const header = document.createElement('div');
+        header.className = 'sub-folder-header';
+        header.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/716/716665.png" alt="folder"> [${prefix}] 関連 (${groupFiles.length}ファイル)`;
+        modalFileList.appendChild(header);
+
+        const subList = document.createElement('ul');
+        subList.className = 'sub-folder-list';
+        groupFiles.forEach(file => {
+          const li = document.createElement('li');
+          li.innerHTML = `<img src="${file.icon}" alt="icon"> ${file.name}`;
+          subList.appendChild(li);
+        });
+        modalFileList.appendChild(subList);
+      } else {
+        // Render as normal file
+        const file = groupFiles[0];
+        const li = document.createElement('li');
+        li.innerHTML = `<img src="${file.icon}" alt="icon"> ${file.name}`;
+        modalFileList.appendChild(li);
+      }
+    }
   }
   
   modal.classList.add('visible');
