@@ -90,6 +90,34 @@ const folderElements = {
 };
 
 async function analyzeFilesWithAI(filesList, apiKey) {
+  // --- DEMO MODE (Fallback) ---
+  if (apiKey.toLowerCase() === 'demo') {
+    return new Promise(resolve => setTimeout(() => {
+      resolve(filesList.map(f => {
+        const name = f.name.toLowerCase();
+        const ext = name.split('.').pop();
+        let cat = 'others', sub = '';
+        
+        // 擬似的なAI意味論的分類ロジック
+        if (['pdf', 'doc', 'docx', 'txt', 'csv'].includes(ext) || name.includes('企画') || name.includes('設計') || name.includes('議事録')) {
+          cat = 'docs';
+          sub = name.includes('企画') ? '企画プロジェクト' : (name.includes('設計') ? 'システム設計' : '各種ドキュメント');
+        } else if (['png', 'jpg', 'jpeg', 'gif', 'svg'].includes(ext) || name.includes('写真') || name.includes('旅行') || name.includes('logo')) {
+          cat = 'images';
+          sub = (name.includes('旅行') || name.includes('沖縄')) ? '旅行の思い出' : 'デザイン素材集';
+        } else if (['js', 'html', 'css', 'ts', 'json'].includes(ext) || name.includes('src') || name.includes('app')) {
+          cat = 'projects';
+          sub = 'フロントエンド開発';
+        } else {
+          cat = 'others';
+          sub = 'その他';
+        }
+        return { filename: f.name, category: cat, subfolder: sub };
+      }));
+    }, 2500)); // 2.5秒間の「考えているフリ」
+  }
+
+  // --- REAL AI MODE (Gemini API) ---
   const filenames = filesList.map(f => f.name);
   const prompt = `You are a smart desktop assistant. I have these files:
 ${JSON.stringify(filenames)}
@@ -129,7 +157,7 @@ cleanupBtn.addEventListener('click', async () => {
   
   const apiKey = document.getElementById('api-key-input').value.trim();
   if (!apiKey) {
-    alert('Gemini API Key を入力してください。');
+    alert('Gemini API Key を入力してください。（エラーになる場合は「demo」と入力してください）');
     return;
   }
   
