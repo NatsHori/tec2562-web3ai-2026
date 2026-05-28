@@ -9,8 +9,19 @@ const smartFolders = document.getElementById('smart-folders');
 const folderInput = document.getElementById('folder-input');
 const folderStatus = document.getElementById('folder-status');
 
+const modal = document.getElementById('folder-modal');
+const modalTitle = document.getElementById('modal-title');
+const modalFileList = document.getElementById('modal-file-list');
+const closeModalBtn = document.getElementById('close-modal');
+
 let isCleaned = false;
 let icons = [];
+let folderContents = {
+  docs: [],
+  images: [],
+  projects: [],
+  others: []
+};
 
 // Determine category based on extension
 function getCategoryAndIcon(filename) {
@@ -30,6 +41,9 @@ function getCategoryAndIcon(filename) {
 function renderIcons(files) {
   container.innerHTML = '';
   icons = [];
+  
+  // Reset contents
+  folderContents = { docs: [], images: [], projects: [], others: [] };
   
   const displayCount = Math.min(files.length, MAX_ICONS);
   
@@ -54,6 +68,9 @@ function renderIcons(files) {
     
     container.appendChild(el);
     icons.push(el);
+    
+    // Store for modal
+    folderContents[category].push({ name: file.name, icon });
   }
 }
 
@@ -146,6 +163,49 @@ function updateScores() {
       
       cleanupBtn.innerHTML = '✨ Optimized!';
       cleanupBtn.style.background = 'var(--success-color)';
+      
+      // Make folders interactive
+      Object.values(folderElements).forEach(folder => {
+        folder.style.cursor = 'pointer';
+      });
     }
   }, 50);
 }
+
+// Modal Logic
+function openModal(category) {
+  if (!isCleaned) return; // Only open after cleanup
+  
+  const categoryNames = {
+    docs: '📄 Documents',
+    images: '🖼️ Images',
+    projects: '💻 Projects',
+    others: '📦 Others'
+  };
+  
+  modalTitle.textContent = categoryNames[category];
+  modalFileList.innerHTML = '';
+  
+  const files = folderContents[category];
+  if (files.length === 0) {
+    modalFileList.innerHTML = '<li>ファイルがありません</li>';
+  } else {
+    files.forEach(file => {
+      const li = document.createElement('li');
+      li.innerHTML = `<img src="${file.icon}" alt="icon"> ${file.name}`;
+      modalFileList.appendChild(li);
+    });
+  }
+  
+  modal.classList.add('visible');
+}
+
+document.getElementById('folder-docs').addEventListener('click', () => openModal('docs'));
+document.getElementById('folder-images').addEventListener('click', () => openModal('images'));
+document.getElementById('folder-projects').addEventListener('click', () => openModal('projects'));
+document.getElementById('folder-others').addEventListener('click', () => openModal('others'));
+
+closeModalBtn.addEventListener('click', () => modal.classList.remove('visible'));
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) modal.classList.remove('visible');
+});
