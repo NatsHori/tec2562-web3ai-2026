@@ -190,42 +190,59 @@ function openModal(category) {
   if (files.length === 0) {
     modalFileList.innerHTML = '<li>ファイルがありません</li>';
   } else {
-    // Group files by first 7 characters (prefix)
-    const groups = {};
-    files.forEach(file => {
-      // Remove extension for prefix extraction
-      const dotIndex = file.name.lastIndexOf('.');
-      const baseName = dotIndex > 0 ? file.name.substring(0, dotIndex) : file.name;
-      const prefix = baseName.substring(0, 7);
+    // Dynamic grouping logic (3 to 10 characters)
+    let ungrouped = [...files];
+    const finalGroups = {};
+
+    // Check longest prefix first (10 down to 3)
+    for (let len = 10; len >= 3; len--) {
+      const prefixMap = {};
       
-      if (!groups[prefix]) groups[prefix] = [];
-      groups[prefix].push(file);
-    });
+      // Build prefix map for current length
+      ungrouped.forEach(file => {
+        const dotIndex = file.name.lastIndexOf('.');
+        const baseName = dotIndex > 0 ? file.name.substring(0, dotIndex) : file.name;
+        
+        if (baseName.length >= len) {
+          const prefix = baseName.substring(0, len);
+          if (!prefixMap[prefix]) prefixMap[prefix] = [];
+          prefixMap[prefix].push(file);
+        }
+      });
 
-    for (const [prefix, groupFiles] of Object.entries(groups)) {
-      if (groupFiles.length >= 2) {
-        // Render as sub-folder
-        const header = document.createElement('div');
-        header.className = 'sub-folder-header';
-        header.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/716/716665.png" alt="folder"> [${prefix}] 関連 (${groupFiles.length}ファイル)`;
-        modalFileList.appendChild(header);
-
-        const subList = document.createElement('ul');
-        subList.className = 'sub-folder-list';
-        groupFiles.forEach(file => {
-          const li = document.createElement('li');
-          li.innerHTML = `<img src="${file.icon}" alt="icon"> ${file.name}`;
-          subList.appendChild(li);
-        });
-        modalFileList.appendChild(subList);
-      } else {
-        // Render as normal file
-        const file = groupFiles[0];
-        const li = document.createElement('li');
-        li.innerHTML = `<img src="${file.icon}" alt="icon"> ${file.name}`;
-        modalFileList.appendChild(li);
+      // Find groups with 2 or more files
+      for (const [prefix, groupFiles] of Object.entries(prefixMap)) {
+        if (groupFiles.length >= 2) {
+          finalGroups[prefix] = groupFiles;
+          // Remove grouped files from ungrouped array
+          ungrouped = ungrouped.filter(f => !groupFiles.includes(f));
+        }
       }
     }
+
+    // Render grouped folders
+    for (const [prefix, groupFiles] of Object.entries(finalGroups)) {
+      const header = document.createElement('div');
+      header.className = 'sub-folder-header';
+      header.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/716/716665.png" alt="folder"> [${prefix}] 関連 (${groupFiles.length}ファイル)`;
+      modalFileList.appendChild(header);
+
+      const subList = document.createElement('ul');
+      subList.className = 'sub-folder-list';
+      groupFiles.forEach(file => {
+        const li = document.createElement('li');
+        li.innerHTML = `<img src="${file.icon}" alt="icon"> ${file.name}`;
+        subList.appendChild(li);
+      });
+      modalFileList.appendChild(subList);
+    }
+    
+    // Render remaining individual files
+    ungrouped.forEach(file => {
+      const li = document.createElement('li');
+      li.innerHTML = `<img src="${file.icon}" alt="icon"> ${file.name}`;
+      modalFileList.appendChild(li);
+    });
   }
   
   modal.classList.add('visible');
