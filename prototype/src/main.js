@@ -68,9 +68,6 @@ function renderIcons(files) {
     
     container.appendChild(el);
     icons.push(el);
-    
-    // Store for modal
-    folderContents[category].push({ name: file.name, icon });
   }
 }
 
@@ -92,45 +89,120 @@ const folderElements = {
   others: document.getElementById('folder-others')
 };
 
-// Cleanup Animation Logic
-cleanupBtn.addEventListener('click', () => {
-  if (isCleaned) return;
-  isCleaned = true;
-  
-  cleanupBtn.disabled = true;
-  cleanupBtn.innerHTML = '🧹 Cleaning...';
-  
-  smartFolders.classList.add('visible');
+async function analyzeFilesWithAI(filesList, apiKey) {
+  const filenames = filesList.map(f => f.name);
+  const prompt = `You are a smart desktop assistant. I have these files:
+${JSON.stringify(filenames)}
 
-  const containerRect = container.getBoundingClientRect();
+Categorize each file into one of these categories: 'docs', 'images', 'projects', or 'others'.
+Also, group semantically related files by giving them the exact same 'subfolder' name in Japanese (e.g., "沖縄旅行", "確定申告", "UIデザイン"). If a file doesn't relate to any others, leave 'subfolder' as an empty string "".
 
-  // Animate icons
-  icons.forEach((icon, index) => {
-    setTimeout(() => {
-      const category = icon.dataset.category;
-      const targetFolder = folderElements[category];
-      
-      const iconRect = icon.getBoundingClientRect();
-      const folderRect = targetFolder.getBoundingClientRect();
-      
-      const tx = folderRect.left - iconRect.left + (folderRect.width / 2) - (iconRect.width / 2);
-      const ty = folderRect.top - iconRect.top + (folderRect.height / 2) - (iconRect.height / 2);
-      
-      icon.style.setProperty('--tx', `${tx}px`);
-      icon.style.setProperty('--ty', `${ty}px`);
-      icon.classList.add('animating');
-      
-      // Highlight folder
-      setTimeout(() => {
-        targetFolder.classList.add('highlight');
-        setTimeout(() => targetFolder.classList.remove('highlight'), 200);
-      }, 700);
-      
-    }, index * 40); // stagger effect
+Respond ONLY with a JSON array of objects in this exact format, with no markdown code blocks:
+[
+  {"filename": "...", "category": "...", "subfolder": "..."}
+]`;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }]
+    })
   });
+  
+  if (!response.ok) {
+    throw new Error('API Request failed');
+  }
+  
+  const data = await response.json();
+  let text = data.candidates[0].content.parts[0].text;
+  text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  return JSON.parse(text);
+}
 
-  // Update Scores progressively
-  setTimeout(updateScores, 1500);
+// Cleanup Animation Logic
+cleanupBtn.addEventListener('click', async () => {
+  if (isCleaned) return;
+  
+  const apiKey = document.getElementById('api-key-input').value.trim();
+  if (!apiKey) {
+    alert('Gemini API Key を入力してください。');
+    return;
+  }
+  
+  isCleaned = true;
+  cleanupBtn.disabled = true;
+  cleanupBtn.innerHTML = '🤖 Analyzing...';
+  
+  const aiLoading = document.getElementById('ai-loading');
+  aiLoading.classList.add('visible');
+
+  try {
+    const rawFiles = icons.map(iconEl => ({ name: iconEl.querySelector('span').textContent, el: iconEl }));
+    const aiResults = await analyzeFilesWithAI(rawFiles, apiKey);
+    
+    // Update categories and folderContents based on AI result
+    folderContents = { docs: [], images: [], projects: [], others: [] };
+    
+    aiResults.forEach(result => {
+      const iconElObj = rawFiles.find(f => f.name === result.filename);
+      if (iconElObj) {
+        const el = iconElObj.el;
+        const category = ['docs', 'images', 'projects'].includes(result.category) ? result.category : 'others';
+        el.dataset.category = category; // Update dataset for animation
+        
+        folderContents[category].push({
+          name: result.filename,
+          icon: el.querySelector('img').src,
+          subfolder: result.subfolder || ''
+        });
+      }
+    });
+
+    aiLoading.classList.remove('visible');
+    cleanupBtn.innerHTML = '🧹 Cleaning...';
+    
+    smartFolders.classList.add('visible');
+
+    const containerRect = container.getBoundingClientRect();
+
+    // Animate icons
+    icons.forEach((icon, index) => {
+      setTimeout(() => {
+        const category = icon.dataset.category;
+        const targetFolder = folderElements[category];
+        
+        const iconRect = icon.getBoundingClientRect();
+        const folderRect = targetFolder.getBoundingClientRect();
+        
+        const tx = folderRect.left - iconRect.left + (folderRect.width / 2) - (iconRect.width / 2);
+        const ty = folderRect.top - iconRect.top + (folderRect.height / 2) - (iconRect.height / 2);
+        
+        icon.style.setProperty('--tx', `${tx}px`);
+        icon.style.setProperty('--ty', `${ty}px`);
+        icon.classList.add('animating');
+        
+        // Highlight folder
+        setTimeout(() => {
+          targetFolder.classList.add('highlight');
+          setTimeout(() => targetFolder.classList.remove('highlight'), 200);
+        }, 700);
+        
+      }, index * 40); // stagger effect
+    });
+
+    // Update Scores progressively
+    setTimeout(updateScores, 1500);
+
+  } catch (err) {
+    console.error(err);
+    aiLoading.classList.remove('visible');
+    alert('AIの分析に失敗しました。APIキーを確認してください。');
+    isCleaned = false;
+    cleanupBtn.disabled = false;
+    cleanupBtn.innerHTML = '✨ Auto Clean Up';
+  }
 });
 
 function updateScores() {
@@ -190,41 +262,24 @@ function openModal(category) {
   if (files.length === 0) {
     modalFileList.innerHTML = '<li>ファイルがありません</li>';
   } else {
-    // Dynamic grouping logic (3 to 10 characters)
-    let ungrouped = [...files];
+    // Dynamic grouping logic based on AI subfolder judgment
     const finalGroups = {};
+    let ungrouped = [];
 
-    // Check longest prefix first (10 down to 3)
-    for (let len = 10; len >= 3; len--) {
-      const prefixMap = {};
-      
-      // Build prefix map for current length
-      ungrouped.forEach(file => {
-        const dotIndex = file.name.lastIndexOf('.');
-        const baseName = dotIndex > 0 ? file.name.substring(0, dotIndex) : file.name;
-        
-        if (baseName.length >= len) {
-          const prefix = baseName.substring(0, len);
-          if (!prefixMap[prefix]) prefixMap[prefix] = [];
-          prefixMap[prefix].push(file);
-        }
-      });
-
-      // Find groups with 2 or more files
-      for (const [prefix, groupFiles] of Object.entries(prefixMap)) {
-        if (groupFiles.length >= 2) {
-          finalGroups[prefix] = groupFiles;
-          // Remove grouped files from ungrouped array
-          ungrouped = ungrouped.filter(f => !groupFiles.includes(f));
-        }
+    files.forEach(file => {
+      if (file.subfolder) {
+        if (!finalGroups[file.subfolder]) finalGroups[file.subfolder] = [];
+        finalGroups[file.subfolder].push(file);
+      } else {
+        ungrouped.push(file);
       }
-    }
+    });
 
-    // Render grouped folders
-    for (const [prefix, groupFiles] of Object.entries(finalGroups)) {
+    // Render grouped folders (AI generated subfolders)
+    for (const [subfolderName, groupFiles] of Object.entries(finalGroups)) {
       const header = document.createElement('div');
       header.className = 'sub-folder-header';
-      header.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/716/716665.png" alt="folder"> [${prefix}] 関連 (${groupFiles.length}ファイル)`;
+      header.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/716/716665.png" alt="folder"> ${subfolderName} (${groupFiles.length}ファイル)`;
       modalFileList.appendChild(header);
 
       const subList = document.createElement('ul');

@@ -36,6 +36,11 @@
           </div>
         </div>
 
+        <div class="api-key-container">
+          <input type="password" id="api-key-input" placeholder="Gemini API Key を入力" class="api-input">
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" class="api-help">取得方法</a>
+        </div>
+
         <div class="folder-picker-container">
           <label for="folder-input" class="folder-btn">
             📁 対象フォルダを選択
@@ -50,6 +55,12 @@
       </div>
 
       <div class="desktop-area glass-panel">
+        <!-- AI Loading Overlay -->
+        <div id="ai-loading" class="ai-loading-overlay">
+          <div class="spinner"></div>
+          <p>🤖 AIがファイルの意味を分析中...</p>
+        </div>
+
         <div class="icons-container" id="desktop-icons"></div>
         <div class="smart-folders" id="smart-folders">
           <div class="smart-folder" id="folder-docs">

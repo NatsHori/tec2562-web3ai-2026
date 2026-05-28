@@ -151,9 +151,45 @@ body {
   transform: none;
 }
 
+/* API Key Input */
+.api-key-container {
+  margin-top: auto;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.api-input {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.api-input:focus {
+  border-color: var(--primary-color);
+}
+
+.api-help {
+  font-size: 12px;
+  color: var(--primary-color);
+  text-decoration: none;
+  align-self: flex-end;
+}
+
+.api-help:hover {
+  text-decoration: underline;
+}
+
 /* Folder Picker */
 .folder-picker-container {
-  margin-top: auto;
   margin-bottom: 16px;
   display: flex;
   flex-direction: column;
@@ -183,6 +219,58 @@ body {
 #folder-status {
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+/* AI Loading Overlay */
+.ai-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.ai-loading-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.ai-loading-overlay p {
+  font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(to right, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: pulse-text 1.5s infinite;
+}
+
+@keyframes pulse-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* Desktop Side */
