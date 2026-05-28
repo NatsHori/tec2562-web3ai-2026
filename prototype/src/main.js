@@ -85,6 +85,13 @@ folderInput.addEventListener('change', (e) => {
   renderIcons(Array.from(files));
 });
 
+const folderElements = {
+  docs: document.getElementById('folder-docs'),
+  images: document.getElementById('folder-images'),
+  projects: document.getElementById('folder-projects'),
+  others: document.getElementById('folder-others')
+};
+
 // Cleanup Animation Logic
 cleanupBtn.addEventListener('click', () => {
   if (isCleaned) return;
@@ -94,13 +101,6 @@ cleanupBtn.addEventListener('click', () => {
   cleanupBtn.innerHTML = '🧹 Cleaning...';
   
   smartFolders.classList.add('visible');
-  
-  const folderElements = {
-    docs: document.getElementById('folder-docs'),
-    images: document.getElementById('folder-images'),
-    projects: document.getElementById('folder-projects'),
-    others: document.getElementById('folder-others')
-  };
 
   const containerRect = container.getBoundingClientRect();
 
