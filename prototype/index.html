@@ -36,7 +36,15 @@
           </div>
         </div>
 
-        <button id="cleanup-btn" class="cleanup-btn">
+        <div class="folder-picker-container">
+          <label for="folder-input" class="folder-btn">
+            📁 対象フォルダを選択
+          </label>
+          <input type="file" id="folder-input" webkitdirectory directory multiple style="display: none;">
+          <p id="folder-status">フォルダを選択して開始</p>
+        </div>
+
+        <button id="cleanup-btn" class="cleanup-btn" disabled>
           ✨ Auto Clean Up
         </button>
       </div>
@@ -55,6 +63,10 @@
           <div class="smart-folder" id="folder-projects">
             <img src="https://cdn-icons-png.flaticon.com/512/716/716665.png" alt="Projects">
             <span>Projects</span>
+          </div>
+          <div class="smart-folder" id="folder-others">
+            <img src="https://cdn-icons-png.flaticon.com/512/709/709699.png" alt="Others">
+            <span>Others</span>
           </div>
         </div>
       </div>
