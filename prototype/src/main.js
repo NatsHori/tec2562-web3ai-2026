@@ -90,8 +90,8 @@ const folderElements = {
 };
 
 async function analyzeFilesWithAI(filesList, apiKey) {
-  // --- DEMO MODE (Fallback) ---
-  if (apiKey.toLowerCase() === 'demo') {
+  // --- DEMO MODE (Fallback / Empty Key) ---
+  if (!apiKey || apiKey.toLowerCase() === 'demo') {
     return new Promise(resolve => setTimeout(() => {
       resolve(filesList.map(f => {
         const name = f.name.toLowerCase();
@@ -117,7 +117,7 @@ async function analyzeFilesWithAI(filesList, apiKey) {
     }, 2500)); // 2.5秒間の「考えているフリ」
   }
 
-  // --- REAL AI MODE (Gemini API) ---
+  // --- REAL AI MODE (Claude API via Vite Proxy) ---
   const filenames = filesList.map(f => f.name);
   const prompt = `You are a smart desktop assistant. I have these files:
 ${JSON.stringify(filenames)}
@@ -125,17 +125,23 @@ ${JSON.stringify(filenames)}
 Categorize each file into one of these categories: 'docs', 'images', 'projects', or 'others'.
 Also, group semantically related files by giving them the exact same 'subfolder' name in Japanese (e.g., "沖縄旅行", "確定申告", "UIデザイン"). If a file doesn't relate to any others, leave 'subfolder' as an empty string "".
 
-Respond ONLY with a JSON array of objects in this exact format, with no markdown code blocks:
+Respond ONLY with a JSON array of objects in this exact format, with no markdown code blocks and no other text:
 [
   {"filename": "...", "category": "...", "subfolder": "..."}
 ]`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+  const url = `/api/claude/v1/messages`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }]
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: prompt }]
     })
   });
   
@@ -146,7 +152,7 @@ Respond ONLY with a JSON array of objects in this exact format, with no markdown
   }
   
   const data = await response.json();
-  let text = data.candidates[0].content.parts[0].text;
+  let text = data.content[0].text;
   text = text.replace(/```json/g, '').replace(/```/g, '').trim();
   return JSON.parse(text);
 }
@@ -156,10 +162,7 @@ cleanupBtn.addEventListener('click', async () => {
   if (isCleaned) return;
   
   const apiKey = document.getElementById('api-key-input').value.trim();
-  if (!apiKey) {
-    alert('Gemini API Key を入力してください。（エラーになる場合は「demo」と入力してください）');
-    return;
-  }
+  // 以前は空欄チェックで弾いていたが、今は空欄ならデモモードで進むのでチェック不要
   
   isCleaned = true;
   cleanupBtn.disabled = true;
