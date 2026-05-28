@@ -117,7 +117,7 @@ async function analyzeFilesWithAI(filesList, apiKey) {
     }, 2500)); // 2.5秒間の「考えているフリ」
   }
 
-  // --- REAL AI MODE (Claude API via Vite Proxy) ---
+  // --- REAL AI MODE (Groq API via Vite Proxy) ---
   const filenames = filesList.map(f => f.name);
   const prompt = `You are a smart desktop assistant. I have these files:
 ${JSON.stringify(filenames)}
@@ -130,17 +130,15 @@ Respond ONLY with a JSON array of objects in this exact format, with no markdown
   {"filename": "...", "category": "...", "subfolder": "..."}
 ]`;
 
-  const url = `/api/claude/v1/messages`;
+  const url = `/api/groq/chat/completions`;
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
+      'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 1500,
+      model: 'llama3-8b-8192',
       messages: [{ role: 'user', content: prompt }]
     })
   });
@@ -152,7 +150,7 @@ Respond ONLY with a JSON array of objects in this exact format, with no markdown
   }
   
   const data = await response.json();
-  let text = data.content[0].text;
+  let text = data.choices[0].message.content;
   text = text.replace(/```json/g, '').replace(/```/g, '').trim();
   return JSON.parse(text);
 }

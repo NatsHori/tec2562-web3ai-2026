@@ -3,10 +3,10 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   server: {
     proxy: {
-      '/api/claude': {
-        target: 'https://api.anthropic.com',
+      '/api/groq': {
+        target: 'https://api.groq.com/openai/v1',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/claude/, ''),
+        rewrite: (path) => path.replace(/^\/api\/groq/, ''),
       }
     }
   }
