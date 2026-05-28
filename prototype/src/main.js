@@ -112,7 +112,9 @@ Respond ONLY with a JSON array of objects in this exact format, with no markdown
   });
   
   if (!response.ok) {
-    throw new Error('API Request failed');
+    const errData = await response.json().catch(() => ({}));
+    const errMsg = errData.error?.message || 'API Request failed';
+    throw new Error(errMsg);
   }
   
   const data = await response.json();
@@ -198,7 +200,7 @@ cleanupBtn.addEventListener('click', async () => {
   } catch (err) {
     console.error(err);
     aiLoading.classList.remove('visible');
-    alert('AIの分析に失敗しました。APIキーを確認してください。');
+    alert('AIの分析に失敗しました: ' + err.message);
     isCleaned = false;
     cleanupBtn.disabled = false;
     cleanupBtn.innerHTML = '✨ Auto Clean Up';
